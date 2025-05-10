@@ -369,3 +369,56 @@ END;
 
 
 --Procedmientos almacenados
+
+CREATE TABLE AuditoriaClientes (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Accion VARCHAR(120),         
+    Fecha DATETIME DEFAULT GETDATE(),
+    IdCliente INT
+);
+
+CREATE PROCEDURE AusitoriaInsertCliente
+    @Nombre NVARCHAR(100),
+    @Apellido NVARCHAR(100),
+    @Telefono VARCHAR(20)
+AS
+BEGIN
+    DECLARE @IdCliente INT;
+
+    INSERT INTO Clientes (Nombre, Apellido, Telefono)
+    VALUES (@Nombre, @Apellido, @Telefono);
+
+    SET @IdCliente = SCOPE_IDENTITY();
+
+    INSERT INTO AuditoriaClientes (Accion, IdCliente)
+    VALUES ('INSERT', @IdCliente);
+END;
+
+CREATE PROCEDURE AuditoriaUpdateCliente
+    @IdCliente INT,
+    @NuevoNombre NVARCHAR(100),
+    @NuevoApellido NVARCHAR(100),
+    @NuevoTelefono VARCHAR(20)
+AS
+BEGIN
+    UPDATE Clientes
+    SET Nombre = @NuevoNombre,
+        Apellido = @NuevoApellido,
+        Telefono = @NuevoTelefono
+    WHERE Id = @IdCliente;
+
+    INSERT INTO AuditoriaClientes (Accion, IdCliente)
+    VALUES ('UPDATE', @IdCliente);
+END;
+
+CREATE PROCEDURE AuditoriaDeleteCliente
+    @IdCliente INT
+AS
+BEGIN
+    DELETE FROM Clientes
+    WHERE Id = @IdCliente;
+
+    INSERT INTO AuditoriaClientes (Accion, IdCliente)
+    VALUES ('DELETE', @IdCliente);
+END;
+--NO OLVIDAR EJECUTARLOS EN EXTERNAL RESOURCES
