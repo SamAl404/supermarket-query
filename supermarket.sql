@@ -263,3 +263,26 @@ FROM DetallesFacturas df
 JOIN Productos p ON df.IdProducto = p.Id
 GROUP BY p.Nombre
 ORDER BY AVG(df.Cantidad * p.ValorUnitario) DESC;
+
+--Clientes más fieles del año
+SELECT TOP 10
+    CONCAT(
+        UPPER(LEFT(LTRIM(RTRIM(c.Nombre)), 1)),
+        LOWER(SUBSTRING(LTRIM(RTRIM(c.Nombre)), 2, LEN(c.Nombre))),
+        ' ',
+        UPPER(LTRIM(RTRIM(c.Apellido)))
+    ) AS ClientesFrecuentes,
+    CAST(COUNT(f.Id) AS VARCHAR) + ' compras en ' + CAST(YEAR(GETDATE()) AS VARCHAR) AS HistorialCompras,
+    CASE 
+        WHEN LEN(c.Telefono) = 10 THEN 
+            CONCAT('TEL: ', SUBSTRING(c.Telefono, 1, 3), '-', SUBSTRING(c.Telefono, 4, 3), '-', SUBSTRING(c.Telefono, 7, 4))
+        ELSE 'TEL: Inválido'
+    END AS TelefonoConFormato,
+    SUM(df.Cantidad * p.ValorUnitario) AS TotalEnCompras
+FROM Clientes c
+JOIN Facturas f ON c.Id = f.IdCliente
+JOIN DetallesFacturas df ON f.Id = df.IdFactura
+JOIN Productos p ON df.IdProducto = p.Id
+WHERE YEAR(f.Fecha) = YEAR(GETDATE())
+GROUP BY c.Nombre, c.Apellido, c.Telefono
+ORDER BY TotalEnCompras DESC;
