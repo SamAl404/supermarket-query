@@ -286,3 +286,86 @@ JOIN Productos p ON df.IdProducto = p.Id
 WHERE YEAR(f.Fecha) = YEAR(GETDATE())
 GROUP BY c.Nombre, c.Apellido, c.Telefono
 ORDER BY TotalEnCompras DESC;
+
+--   AUDITORIAS.
+
+--Con triggers
+
+--Facturas
+CREATE TABLE AuditoriaFacturas (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Accion VARCHAR(20),
+    Fecha DATETIME DEFAULT GETDATE(),
+    IdFactura INT
+);
+
+CREATE TRIGGER AuditoriaInsertFacturas
+ON Facturas
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO AuditoriaFacturas (Accion, IdFactura)
+    SELECT 'INSERT', Id FROM inserted;
+END;
+
+
+CREATE TRIGGER AuditoriaUpdateFacturas
+ON Facturas
+AFTER UPDATE
+AS
+BEGIN
+    INSERT INTO AuditoriaFacturas (Accion, IdFactura)
+    SELECT 'UPDATE', Id FROM inserted;
+END;
+
+
+CREATE TRIGGER AuditoriaDeleteFacturas
+ON Facturas
+AFTER DELETE
+AS
+BEGIN
+    INSERT INTO AuditoriaFacturas (Accion, IdFactura)
+    SELECT 'DELETE', Id FROM deleted;
+END;
+
+
+
+CREATE TABLE AuditoriaDetallesFacturas (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Accion VARCHAR(10),
+    Fecha DATETIME DEFAULT GETDATE(),
+    IdDetalleFactura INT
+);
+
+
+CREATE TRIGGER AuditoriaInsertDetallesFacturas
+ON DetallesFacturas
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO AuditoriaDetallesFacturas (Accion, IdDetalleFactura)
+    SELECT Id, 'INSERT' FROM inserted;
+END;
+
+
+CREATE TRIGGER AuditoriaUpdateDetallesFacturas
+ON DetallesFacturas
+AFTER UPDATE
+AS
+BEGIN
+    INSERT INTO AuditoriaDetallesFacturas (Accion, IdDetalleFactura)
+    SELECT 'UPDATE', Id FROM inserted;
+END;
+
+
+CREATE TRIGGER AuditoriaDeleteDetallesFacturas
+ON DetallesFacturas
+AFTER DELETE
+AS
+BEGIN
+    INSERT INTO AuditoriaDetallesFacturas (Accion, IdDetalleFactura)
+    SELECT 'DELETE', Id FROM deleted;
+END;
+
+
+--Procedmientos almacenados
