@@ -239,3 +239,27 @@ INNER JOIN [Productos] p ON p.[Id] = df.[IdProducto];
 
 --Comentario generico
 -- Comentario de prueba
+
+
+--    APLICACION DE FUNCIONES AGREGADAS
+
+-- Total de productos vendidos por factura
+SELECT IdFactura, SUM(Cantidad) AS TotalProductos
+FROM DetallesFacturas
+GROUP BY IdFactura;
+
+-- Cantidad total de facturas registradas
+SELECT COUNT(*) AS TotalFacturas
+FROM Facturas;
+
+--Valor mínimo, maximo y promedio por producto
+SELECT 
+    p.Nombre AS Producto,
+    MIN(df.Cantidad * p.ValorUnitario) AS VentaMínima,
+    MAX(df.Cantidad * p.ValorUnitario) AS VentaMáxima,
+    AVG(df.Cantidad * p.ValorUnitario) AS VentaPromedio,
+    COUNT(*) AS VecesVendido
+FROM DetallesFacturas df
+JOIN Productos p ON df.IdProducto = p.Id
+GROUP BY p.Nombre
+ORDER BY AVG(df.Cantidad * p.ValorUnitario) DESC;
