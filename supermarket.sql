@@ -377,7 +377,7 @@ CREATE TABLE AuditoriaClientes (
     IdCliente INT
 );
 
-CREATE PROCEDURE AusitoriaInsertCliente
+CREATE PROCEDURE AuditoriaInsertCliente
     @Nombre NVARCHAR(100),
     @Apellido NVARCHAR(100),
     @Telefono VARCHAR(20)
