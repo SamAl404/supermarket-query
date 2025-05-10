@@ -238,3 +238,4 @@ FROM [DetallesFacturas] df
 INNER JOIN [Productos] p ON p.[Id] = df.[IdProducto];
 
 --Comentario generico
+-- Comentario de prueba
