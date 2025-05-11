@@ -5,6 +5,7 @@ GO
 USE db_supermercado;
 GO
 
+
 CREATE TABLE [Empleados](
 
 	[Id] INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
@@ -422,3 +423,106 @@ BEGIN
     VALUES ('DELETE', @IdCliente);
 END;
 --NO OLVIDAR EJECUTARLOS EN EXTERNAL RESOURCES
+
+--Listar productos con menos de 300 unidades 
+SELECT * FROM Productos
+WHERE CantidadProductos < 300;
+
+--Mostrar detalles de una factura especifica (por código)
+
+SELECT df.Cantidad, p.Nombre AS Producto, p.ValorUnitario,
+       (df.Cantidad * p.ValorUnitario) AS Subtotal
+FROM DetallesFacturas df
+JOIN Productos p ON df.IdProducto = p.Id
+JOIN Facturas f ON df.IdFactura = f.Id
+WHERE f.Codigo = 'A009'; 
+
+
+--Calcular y mostrar por factura el total
+CREATE PROCEDURE ReporteTotalesFacturas
+AS
+BEGIN
+    DECLARE @IdFactura INT;
+    DECLARE @Codigo NVARCHAR(50);
+    DECLARE @Total DECIMAL(18, 2);
+
+    -- Cursor para recorrer todas las facturas
+    DECLARE FacturaCursor CURSOR FOR
+    SELECT Id, Codigo FROM Facturas;
+
+    OPEN FacturaCursor;
+
+    FETCH NEXT FROM FacturaCursor INTO @IdFactura, @Codigo;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Calcular el total de la factura actual
+        SELECT @Total = SUM(df.Cantidad * p.ValorUnitario)
+        FROM DetallesFacturas df
+        JOIN Productos p ON df.IdProducto = p.Id
+        WHERE df.IdFactura = @IdFactura;
+
+        -- Mostrar el resultado
+        PRINT 'Factura: ' + @Codigo + ' | Total: ' + CAST(@Total AS NVARCHAR(50));
+
+        FETCH NEXT FROM FacturaCursor INTO @IdFactura, @Codigo;
+    END
+
+    CLOSE FacturaCursor;
+    DEALLOCATE FacturaCursor;
+END;
+
+EXEC ReporteTotalesFacturas;
+
+--Mostrar los productos con un inventario bajo
+CREATE PROCEDURE RevisarInventarioBajo
+AS
+BEGIN
+    DECLARE @IdProducto INT;
+    DECLARE @Nombre NVARCHAR(50);
+    DECLARE @Cantidad INT;
+    DECLARE @HayBajoInventario BIT = 0;
+
+    DECLARE cur CURSOR FOR
+    SELECT Id, Nombre, CantidadProductos
+    FROM Productos;
+
+    OPEN cur;
+    FETCH NEXT FROM cur INTO @IdProducto, @Nombre, @Cantidad;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        IF @Cantidad < 10
+        BEGIN
+            PRINT 'Producto con bajo inventario: ' + @Nombre + ' (Cantidad: ' + CAST(@Cantidad AS NVARCHAR) + ')';
+            SET @HayBajoInventario = 1;
+        END
+        FETCH NEXT FROM cur INTO @IdProducto, @Nombre, @Cantidad;
+    END
+
+    CLOSE cur;
+    DEALLOCATE cur;
+
+    IF @HayBajoInventario = 0
+    BEGIN
+        PRINT 'Todos los productos tienen inventario suficiente.';
+    END
+END;
+
+EXECUTE RevisarInventarioBajo
+
+--Actualizar stock de un producto
+CREATE PROCEDURE ActualizarStock
+    @IdProducto INT,
+    @NuevaCantidad INT
+AS
+BEGIN
+    UPDATE Productos
+    SET CantidadProductos = @NuevaCantidad
+    WHERE Id = @IdProducto;
+END;
+
+EXEC ActualizarStock 1,9
+
+SELECT * from Productos WHERE id = 1
+
