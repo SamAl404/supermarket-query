@@ -241,3 +241,125 @@ INNER JOIN [Productos] p ON p.[Id] = df.[IdProducto];
 -- Comentario de prueba
 
 
+SELECT * FROM MetodosPagos;
+
+-- PUNTO 25:
+
+-- CAST
+SELECT 
+    f.Id AS FacturaID,
+    c.Nombre AS Cliente,
+    CAST(f.Fecha AS VARCHAR(20)) AS FechaTexto
+FROM Facturas f
+JOIN Clientes c ON f.IdCliente = c.Id;
+
+-- DEFAULT
+
+ALTER TABLE MetodosPagos
+ADD CONSTRAINT DTEstadoMetodoPago DEFAULT 1 FOR Estado;
+
+INSERT INTO MetodosPagos (TipoPago) VALUES ('Transferencia');
+
+-- 26 DISTINC
+
+SELECT * FROM MetodosPagos;
+
+DELETE FROM MetodosPagos WHERE Id = 14;
+
+SELECT DISTINCT TipoPago FROM MetodosPagos;
+
+ALTER TABLE MetodosPagos ADD CONSTRAINT TipoPagoUnique UNIQUE(TipoPago);
+INSERT INTO MetodosPagos(TipoPago,Estado)VALUES('Credito',1);
+
+
+-- 27 OTROS COMODINES DE LIKE
+
+SELECT * FROM Clientes;
+SELECT * FROM Clientes WHERE Apellido LIKE '%z';
+SELECT * FROM Clientes WHERE Apellido LIKE '%r%';
+SELECT * FROM Clientes WHERE Apellido LIKE '_i%';
+SELECT * FROM Clientes WHERE Nombre LIKE 'D____';
+SELECT * FROM Clientes WHERE Nombre LIKE 'A%' OR NOMBRE LIKE 'S%';
+SELECT * FROM Clientes WHERE Apellido LIKE '%i%a';
+
+
+-- 28 INSERT CON DATOS DE OTRA TABLA 
+
+CREATE TABLE TemporalEmpleados(
+
+	Id INT PRIMARY KEY  NOT NULL,
+	Cedula NVARCHAR(50) NOT NULL,
+	Carne NVARCHAR(50) NOT NULL,
+	Nombre NVARCHAR(50) NOT NULL,
+	Apellido NVARCHAR(50) NOT NULL
+
+);
+
+
+INSERT INTO TemporalEmpleados (Id, Cedula, Carne, Nombre, Apellido)
+SELECT Id, Cedula, Carne, Nombre, Apellido
+FROM Empleados;
+
+SELECT * FROM Empleados;
+SELECT * FROM TemporalEmpleados;
+
+-- 29 CLAUSULA COMPUTE VS ROLLUP VS CUBE 
+
+-- ROLLUP 
+SELECT TipoPago, COUNT(*) AS Total
+FROM MetodosPagos
+GROUP BY ROLLUP(TipoPago);
+
+
+-- CUBE 
+SELECT Estado, TipoPago, COUNT(*) AS Total
+FROM MetodosPagos
+GROUP BY CUBE(Estado, TipoPago);
+
+-- 30 MERGE
+
+
+INSERT INTO Empleados(Cedula,Carne,Nombre,Apellido)VALUES('444','A004','Isabel','Ocampo');
+
+SELECT * FROM Empleados;
+SELECT * FROM TemporalEmpleados;
+
+MERGE INTO TemporalEmpleados AS T
+USING Empleados AS E
+ON T.Id = E.Id
+WHEN MATCHED THEN
+    UPDATE SET 
+        T.Cedula = E.Cedula,
+        T.Carne = E.Carne,
+        T.Nombre = E.Nombre,
+        T.Apellido = E.Apellido
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT (Id, Cedula, Carne, Nombre, Apellido)
+    VALUES (E.Id, E.Cedula, E.Carne, E.Nombre, E.Apellido);
+
+	
+SELECT * FROM Empleados;
+SELECT * FROM TemporalEmpleados;
+
+-- 31
+SELECT 
+    Id,
+    TipoPago,
+    Estado,
+    CASE 
+        WHEN Estado = 1 THEN 'Activo'
+        WHEN Estado = 0 THEN 'Inactivo'
+        ELSE 'Desconocido'
+    END AS EstadoDescripcion
+FROM MetodosPagos;
+
+
+
+-- 32 
+
+DECLARE @TipoPago NVARCHAR(50);
+SET @TipoPago = 'Efectivo';--SIMULACION DE PARAMETRO INTERACTIVO
+
+SELECT *
+FROM MetodosPagos
+WHERE TipoPago = @TipoPago;
