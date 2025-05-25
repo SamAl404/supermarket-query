@@ -190,339 +190,183 @@ INSERT INTO [DetallesFacturas]([Cantidad], [IdProducto], [IdFactura])VALUES
 ( 5, 7, 9);
 
 
-SELECT 
-	f.[Id],
-	f.[Codigo],
-	f.[Fecha],
-	f.[IdEmpleado],
-	f.[IdCliente],
-	f.[IdMetodoPago],
-
-	(SELECT SUM(df.[Cantidad] * p.[ValorUnitario])
-	FROM [DetallesFacturas] df
-	JOIN [Productos] p on df.[IdProducto] = p.[Id]
-	WHERE df.IdFactura = f.[Id]) 
-	AS Total
-
-FROM [Facturas] f;
-
-
-SELECT * FROM [Productos];
-
-SELECT pr.[Id], pr.[Nombre], p.[Nombre]
-FROM [Proveedores] pr 
-JOIN [Productos] p 
-ON pr.[Id] = p.[IdProveedor];
-
-SELECT 
-
-	f.[Id],
-	f.[Codigo],
-	f.[Fecha],
-
-	(SELECT SUM(df.[Cantidad] * p.[ValorUnitario])
-	 FROM [DetallesFacturas] df
-	 INNER JOIN [Productos] p ON p.[Id] = df.[IdProducto]
-	 WHERE f.[Id] = df.[IdFactura]) AS Total
-
-FROM [Facturas] f;
 
 
 
-SELECT
+-- PUNTO 9:
+-- Creación de registros en la tabla Empleados:
+INSERT INTO Empleados (Cedula, Carne, Nombre, Apellido) VALUES
+('1045879653', 'EMP-001', 'María', 'Gómez'),
+('1098765432', 'EMP-002', 'Juan', 'Pérez');
+GO
 
-	df.[Id],
-	df.[Cantidad],
-	(df.[Cantidad] * p.[ValorUnitario]) AS [ValorBruto]
-	
-FROM [DetallesFacturas] df
-INNER JOIN [Productos] p ON p.[Id] = df.[IdProducto];
+-- Consultas de registros en la tabla Empleados:
+SELECT * FROM Empleados;
+GO
 
---Comentario generico
--- Comentario de prueba
+SELECT Id, Cedula, Nombre, Apellido
+FROM Empleados
+WHERE Cedula = '1098765432';
+GO
 
+-- Actualización de registros en la tabla Empleados:
+UPDATE Empleados
+SET Apellido = 'Ramírez'
+WHERE Id = 1;
+GO
 
---    APLICACION DE FUNCIONES AGREGADAS
+UPDATE Empleados
+SET Nombre = 'María Fernanda'
+WHERE Carne = 'EMP-001';
+GO
 
--- Total de productos vendidos por factura
-SELECT IdFactura, SUM(Cantidad) AS TotalProductos
-FROM DetallesFacturas
-GROUP BY IdFactura;
+-- Borrado de registros en la tabla Empleados:
+DELETE FROM Empleados
+WHERE Id = 5;
+GO
 
--- Cantidad total de facturas registradas
-SELECT COUNT(*) AS TotalFacturas
-FROM Facturas;
-
---Valor mínimo, maximo y promedio por producto
-SELECT 
-    p.Nombre AS Producto,
-    MIN(df.Cantidad * p.ValorUnitario) AS VentaMínima,
-    MAX(df.Cantidad * p.ValorUnitario) AS VentaMáxima,
-    AVG(df.Cantidad * p.ValorUnitario) AS VentaPromedio,
-    COUNT(*) AS VecesVendido
-FROM DetallesFacturas df
-JOIN Productos p ON df.IdProducto = p.Id
-GROUP BY p.Nombre
-ORDER BY AVG(df.Cantidad * p.ValorUnitario) DESC;
-
---Clientes más fieles del año
-SELECT TOP 10
-    CONCAT(
-        UPPER(LEFT(LTRIM(RTRIM(c.Nombre)), 1)),
-        LOWER(SUBSTRING(LTRIM(RTRIM(c.Nombre)), 2, LEN(c.Nombre))),
-        ' ',
-        UPPER(LTRIM(RTRIM(c.Apellido)))
-    ) AS ClientesFrecuentes,
-    CAST(COUNT(f.Id) AS VARCHAR) + ' compras en ' + CAST(YEAR(GETDATE()) AS VARCHAR) AS HistorialCompras,
-    CASE 
-        WHEN LEN(c.Telefono) = 10 THEN 
-            CONCAT('TEL: ', SUBSTRING(c.Telefono, 1, 3), '-', SUBSTRING(c.Telefono, 4, 3), '-', SUBSTRING(c.Telefono, 7, 4))
-        ELSE 'TEL: Inválido'
-    END AS TelefonoConFormato,
-    SUM(df.Cantidad * p.ValorUnitario) AS TotalEnCompras
-FROM Clientes c
-JOIN Facturas f ON c.Id = f.IdCliente
-JOIN DetallesFacturas df ON f.Id = df.IdFactura
-JOIN Productos p ON df.IdProducto = p.Id
-WHERE YEAR(f.Fecha) = YEAR(GETDATE())
-GROUP BY c.Nombre, c.Apellido, c.Telefono
-ORDER BY TotalEnCompras DESC;
-
---   AUDITORIAS.
-
---Con triggers
-
---Facturas
-CREATE TABLE AuditoriaFacturas (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    Accion VARCHAR(20),
-    Fecha DATETIME DEFAULT GETDATE(),
-    IdFactura INT
-);
-
-CREATE TRIGGER AuditoriaInsertFacturas
-ON Facturas
-AFTER INSERT
-AS
-BEGIN
-    INSERT INTO AuditoriaFacturas (Accion, IdFactura)
-    SELECT 'INSERT', Id FROM inserted;
-END;
-
-
-CREATE TRIGGER AuditoriaUpdateFacturas
-ON Facturas
-AFTER UPDATE
-AS
-BEGIN
-    INSERT INTO AuditoriaFacturas (Accion, IdFactura)
-    SELECT 'UPDATE', Id FROM inserted;
-END;
-
-
-CREATE TRIGGER AuditoriaDeleteFacturas
-ON Facturas
-AFTER DELETE
-AS
-BEGIN
-    INSERT INTO AuditoriaFacturas (Accion, IdFactura)
-    SELECT 'DELETE', Id FROM deleted;
-END;
+DELETE FROM Empleados
+WHERE Cedula = '1045879653';
+GO
 
 
 
-CREATE TABLE AuditoriaDetallesFacturas (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    Accion VARCHAR(10),
-    Fecha DATETIME DEFAULT GETDATE(),
-    IdDetalleFactura INT
-);
 
 
-CREATE TRIGGER AuditoriaInsertDetallesFacturas
-ON DetallesFacturas
-AFTER INSERT
-AS
-BEGIN
-    INSERT INTO AuditoriaDetallesFacturas (Accion, IdDetalleFactura)
-    SELECT Id, 'INSERT' FROM inserted;
-END;
+-- PUNTO 10:
+-- 1. INNER JOIN: sólo facturas con cliente asociado
+SELECT f.Codigo, f.Fecha, c.Nombre + ' ' + c.Apellido AS Cliente
+FROM Facturas f
+INNER JOIN Clientes c
+ON f.IdCliente = c.Id;
+GO
+-- 2. LEFT JOIN: todas las facturas y, cuando exista, datos de cliente
+SELECT f.Codigo, f.Fecha, c.Nombre + ' ' + c.Apellido AS Cliente
+FROM Facturas f
+LEFT JOIN Clientes c
+ON f.IdCliente = c.Id;
+GO
+-- 3. RIGHT JOIN: todos los clientes y sus facturas, si las hay
+SELECT f.Codigo, f.Fecha, c.Nombre + ' ' + c.Apellido AS Cliente
+FROM Facturas f
+RIGHT JOIN Clientes c
+ON f.IdCliente = c.Id;
+GO
+-- 4. FULL OUTER JOIN: unión de LEFT y RIGHT, facturas y clientes sin
+correspondencia también aparecen
+SELECT f.Codigo, f.Fecha, c.Nombre + ' ' + c.Apellido AS Cliente
+FROM Facturas f
+FULL OUTER JOIN Clientes c
+ON f.IdCliente = c.Id;
+GO
 
 
-CREATE TRIGGER AuditoriaUpdateDetallesFacturas
-ON DetallesFacturas
-AFTER UPDATE
-AS
-BEGIN
-    INSERT INTO AuditoriaDetallesFacturas (Accion, IdDetalleFactura)
-    SELECT 'UPDATE', Id FROM inserted;
-END;
 
 
-CREATE TRIGGER AuditoriaDeleteDetallesFacturas
-ON DetallesFacturas
-AFTER DELETE
-AS
-BEGIN
-    INSERT INTO AuditoriaDetallesFacturas (Accion, IdDetalleFactura)
-    SELECT 'DELETE', Id FROM deleted;
-END;
 
+-- PUNTO 11:
+-- Selección básica de todas las columnas de la tabla Productos:
+SELECT *
+FROM Productos;
+GO
 
---Procedmientos almacenados
+-- Obtener los distintos proveedores que aparecen en Productos (DISTINCT):
+SELECT DISTINCT IdProveedor
+FROM Productos;
+GO
 
-CREATE TABLE AuditoriaClientes (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    Accion VARCHAR(120),         
-    Fecha DATETIME DEFAULT GETDATE(),
-    IdCliente INT
-);
-
-CREATE PROCEDURE AuditoriaInsertCliente
-    @Nombre NVARCHAR(100),
-    @Apellido NVARCHAR(100),
-    @Telefono VARCHAR(20)
-AS
-BEGIN
-    DECLARE @IdCliente INT;
-
-    INSERT INTO Clientes (Nombre, Apellido, Telefono)
-    VALUES (@Nombre, @Apellido, @Telefono);
-
-    SET @IdCliente = SCOPE_IDENTITY();
-
-    INSERT INTO AuditoriaClientes (Accion, IdCliente)
-    VALUES ('INSERT', @IdCliente);
-END;
-
-CREATE PROCEDURE AuditoriaUpdateCliente
-    @IdCliente INT,
-    @NuevoNombre NVARCHAR(100),
-    @NuevoApellido NVARCHAR(100),
-    @NuevoTelefono VARCHAR(20)
-AS
-BEGIN
-    UPDATE Clientes
-    SET Nombre = @NuevoNombre,
-        Apellido = @NuevoApellido,
-        Telefono = @NuevoTelefono
-    WHERE Id = @IdCliente;
-
-    INSERT INTO AuditoriaClientes (Accion, IdCliente)
-    VALUES ('UPDATE', @IdCliente);
-END;
-
-CREATE PROCEDURE AuditoriaDeleteCliente
-    @IdCliente INT
-AS
-BEGIN
-    DELETE FROM Clientes
-    WHERE Id = @IdCliente;
-
-    INSERT INTO AuditoriaClientes (Accion, IdCliente)
-    VALUES ('DELETE', @IdCliente);
-END;
---NO OLVIDAR EJECUTARLOS EN EXTERNAL RESOURCES
-
---Listar productos con menos de 300 unidades 
-SELECT * FROM Productos
+-- Productos con stock menor a 300 unidades (WHERE):
+SELECT Nombre, CantidadProductos
+FROM Productos
 WHERE CantidadProductos < 300;
+GO
 
---Mostrar detalles de una factura especifica (por código)
+-- Clientes cuyo apellido sea 'Villa' y teléfono comience con '312' (AND y LIKE):
+SELECT Nombre, Apellido, Telefono
+FROM Clientes
+WHERE Apellido = 'Villa'
+AND Telefono LIKE '312%';
+GO
 
-SELECT df.Cantidad, p.Nombre AS Producto, p.ValorUnitario,
-       (df.Cantidad * p.ValorUnitario) AS Subtotal
-FROM DetallesFacturas df
-JOIN Productos p ON df.IdProducto = p.Id
-JOIN Facturas f ON df.IdFactura = f.Id
-WHERE f.Codigo = 'A009'; 
+-- Facturas cuyo Id sea entre 3 y 6 (WHERE, BETWEEN y AND):
+SELECT Codigo, Id
+FROM Facturas
+WHERE Id BETWEEN 3 AND 6;
+GO
+
+-- Clientes ordenados de forma descendente por apellido (ORDER BY, DESC):
+SELECT Nombre, Apellido
+FROM Clientes
+ORDER BY Apellido DESC;
+GO
+
+-- Obtener las 3 facturas más recientes por fecha (TOP, ORDER BY, DESC):
+SELECT TOP 3 Codigo, Fecha
+FROM Facturas
+ORDER BY Fecha DESC;
+GO
+
+-- Métodos de pago con más de 2 facturas (GROUP BY, HAVING):
+SELECT mp.TipoPago, COUNT(*) AS CantidadFacturas
+FROM Facturas f
+JOIN MetodosPagos mp
+ON f.IdMetodoPago = mp.Id
+GROUP BY mp.TipoPago
+HAVING COUNT(*) > 2;
+GO
 
 
---Calcular y mostrar por factura el total
-CREATE PROCEDURE ReporteTotalesFacturas
-AS
-BEGIN
-    DECLARE @IdFactura INT;
-    DECLARE @Codigo NVARCHAR(50);
-    DECLARE @Total DECIMAL(18, 2);
 
-    -- Cursor para recorrer todas las facturas
-    DECLARE FacturaCursor CURSOR FOR
-    SELECT Id, Codigo FROM Facturas;
 
-    OPEN FacturaCursor;
 
-    FETCH NEXT FROM FacturaCursor INTO @IdFactura, @Codigo;
+-- PUNTO 12:
+ALTER TABLE DetallesFacturas
+ADD CONSTRAINT FK_DetallesFacturas_Productos
+FOREIGN KEY (IdProducto) REFERENCES Productos(Id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+GO
 
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Calcular el total de la factura actual
-        SELECT @Total = SUM(df.Cantidad * p.ValorUnitario)
-        FROM DetallesFacturas df
-        JOIN Productos p ON df.IdProducto = p.Id
-        WHERE df.IdFactura = @IdFactura;
 
-        -- Mostrar el resultado
-        PRINT 'Factura: ' + @Codigo + ' | Total: ' + CAST(@Total AS NVARCHAR(50));
 
-        FETCH NEXT FROM FacturaCursor INTO @IdFactura, @Codigo;
-    END
 
-    CLOSE FacturaCursor;
-    DEALLOCATE FacturaCursor;
-END;
 
-EXEC ReporteTotalesFacturas;
+-- PUNTO 14:
+-- Listar todas las cédulas de empleados y clientes (UNION / sin duplicados)
+--Listar todas las cédulas de empleados y clientes (UNION ALL / con duplicados):
+SELECT Cedula
+FROM Empleados
+UNION
+SELECT Cedula
+FROM Clientes;
+GO
 
---Mostrar los productos con un inventario bajo
-CREATE PROCEDURE RevisarInventarioBajo
-AS
-BEGIN
-    DECLARE @IdProducto INT;
-    DECLARE @Nombre NVARCHAR(50);
-    DECLARE @Cantidad INT;
-    DECLARE @HayBajoInventario BIT = 0;
+SELECT Cedula
+FROM Empleados
+UNION ALL
+SELECT Cedula
+FROM Clientes;
+GO
 
-    DECLARE cur CURSOR FOR
-    SELECT Id, Nombre, CantidadProductos
-    FROM Productos;
+-- Cédulas que son a la vez empleados y clientes (INTERSECT):
+SELECT Cedula
+FROM Empleados
+INTERSECT
+SELECT Cedula
+FROM Clientes;
+GO
 
-    OPEN cur;
-    FETCH NEXT FROM cur INTO @IdProducto, @Nombre, @Cantidad;
+-- Cédulas de empleados que no son clientes y Cédulas de clientes que no son empleados (EXCEPT):
+SELECT Cedula
+FROM Empleados
+EXCEPT
+SELECT Cedula
+FROM Clientes;
+GO
 
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        IF @Cantidad < 10
-        BEGIN
-            PRINT 'Producto con bajo inventario: ' + @Nombre + ' (Cantidad: ' + CAST(@Cantidad AS NVARCHAR) + ')';
-            SET @HayBajoInventario = 1;
-        END
-        FETCH NEXT FROM cur INTO @IdProducto, @Nombre, @Cantidad;
-    END
-
-    CLOSE cur;
-    DEALLOCATE cur;
-
-    IF @HayBajoInventario = 0
-    BEGIN
-        PRINT 'Todos los productos tienen inventario suficiente.';
-    END
-END;
-
-EXECUTE RevisarInventarioBajo
-
---Actualizar stock de un producto
-CREATE PROCEDURE ActualizarStock
-    @IdProducto INT,
-    @NuevaCantidad INT
-AS
-BEGIN
-    UPDATE Productos
-    SET CantidadProductos = @NuevaCantidad
-    WHERE Id = @IdProducto;
-END;
-
-EXEC ActualizarStock 1,9
-
-SELECT * from Productos WHERE id = 1
-
+SELECT Cedula
+FROM Clientes
+EXCEPT
+SELECT Cedula
+FROM Empleados;
+GO
